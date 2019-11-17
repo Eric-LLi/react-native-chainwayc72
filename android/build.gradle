@@ -64,7 +64,9 @@ dependencies {
     //noinspection GradleDynamicVersion
     implementation 'com.facebook.react:react-native:+'
     implementation files('libs/IGLBarDecoder.jar')
-    implementation files('libs/cw-deviceapi20190815.jar')  // From node_modules
+    implementation files('libs/cw-deviceapi20190815.jar')
+    implementation files('libs/jxl.jar')
+    implementation files('libs/xUtils-2.5.5.jar')  // From node_modules
 }
 
 def configureReactNativePom(def pom) {

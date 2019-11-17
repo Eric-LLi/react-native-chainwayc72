@@ -83,7 +83,84 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 			};
 			scannerthread.start();
 		} catch (Exception err) {
-			Log.e("Initial_Thread", err.getMessage());
+			Log.e("InitialThread", err.getMessage());
+		}
+	}
+
+	@ReactMethod
+	public void init(Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.init();
+				promise.resolve(true);
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void shutdown(Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.shutdown();
+				promise.resolve(true);
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void isConnected(Promise promise) {
+		if (this.scannerthread != null) {
+			promise.resolve(true);
+		} else {
+			promise.resolve(false);
+		}
+	}
+
+	@ReactMethod
+	public void read(boolean isSingleRead, Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.read(isSingleRead);
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void cancel(Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.cancel();
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void getAntennaLevel(Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.getAntennaLevel();
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void setAntennaLevel(Promise promise){
+		try{
+			if(this.scannerthread!= null){
+				this.scannerthread.setAntennaLevel();
+			}
+		}catch (Exception err){
+			promise.reject(err);
 		}
 	}
 }
