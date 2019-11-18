@@ -70,8 +70,8 @@ export class RFIDScanner {
 		return rfidScannerManager.enableReader(isEnable);
 	}
 
-	read = () => {
-		rfidScannerManager.read();
+	read = (isSingleRead: Boolean) => {
+		rfidScannerManager.read(isSingleRead);
 	}
 
 	cancel = () => {
