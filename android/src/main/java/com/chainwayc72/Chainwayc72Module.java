@@ -81,7 +81,7 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 					Chainwayc72Module.this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
 				}
 			};
-			scannerthread.start();
+			this.scannerthread.start();
 		} catch (Exception err) {
 			Log.e("InitialThread", err.getMessage());
 		}
@@ -91,8 +91,8 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	public void init(Promise promise) {
 		try {
 			if (this.scannerthread != null) {
-				this.scannerthread.init();
-				promise.resolve(true);
+				boolean result = this.scannerthread.init();
+				promise.resolve(result);
 			}
 		} catch (Exception err) {
 			promise.reject(err);
@@ -112,11 +112,14 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void isConnected(Promise promise) {
-		if (this.scannerthread != null) {
-			promise.resolve(true);
-		} else {
-			promise.resolve(false);
+	public void enableReader(boolean isEnable, Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				boolean result = this.scannerthread.enableReader(isEnable);
+				promise.resolve(result);
+			}
+		} catch (Exception err) {
+			promise.reject(err);
 		}
 	}
 
@@ -125,6 +128,7 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 		try {
 			if (this.scannerthread != null) {
 				this.scannerthread.read(isSingleRead);
+				promise.resolve(true);
 			}
 		} catch (Exception err) {
 			promise.reject(err);
@@ -135,7 +139,8 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	public void cancel(Promise promise) {
 		try {
 			if (this.scannerthread != null) {
-				this.scannerthread.cancel();
+				boolean result = this.scannerthread.cancel();
+				promise.resolve(result);
 			}
 		} catch (Exception err) {
 			promise.reject(err);
@@ -146,7 +151,8 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	public void getAntennaLevel(Promise promise) {
 		try {
 			if (this.scannerthread != null) {
-				this.scannerthread.getAntennaLevel();
+				int power = this.scannerthread.getAntennaLevel();
+				promise.resolve(power);
 			}
 		} catch (Exception err) {
 			promise.reject(err);
@@ -154,13 +160,44 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void setAntennaLevel(Promise promise){
-		try{
-			if(this.scannerthread!= null){
-				this.scannerthread.setAntennaLevel();
+	public void setAntennaLevel(int power, Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				boolean result = this.scannerthread.setAntennaLevel(power);
+				promise.resolve(result);
 			}
-		}catch (Exception err){
+		} catch (Exception err) {
 			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void SaveCurrentRoute(String value, Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				this.scannerthread.SaveCurrentRoute(value);
+			}
+			promise.resolve(true);
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void writeTag(String targetTag, String newTag, Promise promise) {
+		try {
+			if (this.scannerthread != null) {
+				promise.resolve(this.scannerthread.writeTag(targetTag, newTag));
+			}
+		} catch (Exception err) {
+			promise.reject(err);
+		}
+	}
+
+	@ReactMethod
+	public void cleanTags() {
+		if (this.scannerthread != null) {
+			this.scannerthread.cleanTags();
 		}
 	}
 }

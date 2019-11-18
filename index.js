@@ -1,4 +1,3 @@
-
 import RFIDScanner from './src/RFIDScanner';
 import { RFIDScannerEvent } from './src/RFIDScannerEvent';
 
