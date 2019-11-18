@@ -26,7 +26,11 @@ export class RFIDScanner {
 			this.eventEmitter.removeListener(RFIDScannerEvent.TAG, this.handleTagEvent);
 		}
 	};
-
+	
+	/**
+	 * tags come from native module
+	 * @param  {String} tag
+	 */
 	handleTagEvent = (tag: String) => {
 		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.TAG)) {
 			this.onCallbacks[RFIDScannerEvent.TAG](tag);
@@ -42,6 +46,11 @@ export class RFIDScanner {
 		this.onCallbacks[event] = callback;
 	}
 
+	
+	/**
+	 * @param  {String} event name of the event want to remove
+	 * @param  {Function} callback
+	 */
 	removeon(event: String, callback : Function) {
 		if (this.onCallbacks.hasOwnProperty(event)) {
 			this.onCallbacks[event] = null;
@@ -84,6 +93,13 @@ export class RFIDScanner {
 
 	setAntennaLevel = (antennaLevel: Number) => {
 		return rfidScannerManager.setAntennaLevel(antennaLevel);
+	}
+
+	saveCurrentRoute = (route: String) => {
+		rfidScannerManager.saveCurrentRoute(route);
+	}
+	writeTag = (targetTag: String, newTag: String) => {
+		return rfidScannerManager.writeTag(targetTag,newTag);
 	}
 }
 

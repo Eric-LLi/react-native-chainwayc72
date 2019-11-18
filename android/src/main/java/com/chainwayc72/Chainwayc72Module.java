@@ -172,10 +172,10 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void SaveCurrentRoute(String value, Promise promise) {
+	public void saveCurrentRoute(String route, Promise promise) {
 		try {
 			if (this.scannerthread != null) {
-				this.scannerthread.SaveCurrentRoute(value);
+				this.scannerthread.saveCurrentRoute(route);
 			}
 			promise.resolve(true);
 		} catch (Exception err) {

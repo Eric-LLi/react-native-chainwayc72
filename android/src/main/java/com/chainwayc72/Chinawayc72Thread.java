@@ -12,6 +12,7 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.rscja.deviceapi.RFIDWithUHF;
 import com.rscja.utility.StringUtility;
+import com.rscja.deviceapi.RFIDWithUHF.BankEnum;
 
 import java.util.ArrayList;
 
@@ -108,11 +109,15 @@ public abstract class Chinawayc72Thread extends Thread {
 	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyDownEvent", String.valueOf(keyCode));
-			try {
-				read(false);
-				isReading = true;
-			} catch (Exception err) {
-				Log.e("onKeyDownEvent", err.getMessage());
+			if (isReadBarcode) {
+				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
+			} else {
+				try {
+					read(false);
+					isReading = true;
+				} catch (Exception err) {
+					Log.e("onKeyDownEvent", err.getMessage());
+				}
 			}
 		}
 	}
@@ -121,12 +126,16 @@ public abstract class Chinawayc72Thread extends Thread {
 	public void onKeyUpEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyUpEvent", String.valueOf(keyCode));
-			try {
-				cancel();
-			} catch (Exception err) {
-				Log.e("onKeyUpEvent", err.getMessage());
+			if (isReadBarcode) {
+				dispatchEvent(Dispatch_Event.BarcodeTrigger, false);
+			} else {
+				try {
+					cancel();
+					isReading = false;
+				} catch (Exception err) {
+					Log.e("onKeyUpEvent", err.getMessage());
+				}
 			}
-			isReading = false;
 		}
 	}
 
@@ -258,9 +267,9 @@ public abstract class Chinawayc72Thread extends Thread {
 		throw new Exception("Set antenna level failure");
 	}
 
-	public void SaveCurrentRoute(String value) {
-		if (value != null) {
-			currentRoute = value.toLowerCase();
+	public void saveCurrentRoute(String route) {
+		if (route != null) {
+			currentRoute = route.toLowerCase();
 		} else {
 			currentRoute = null;
 		}
@@ -272,11 +281,37 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	public boolean writeTag(String targetTag, String newTag) {
+	public boolean writeTag(String targetTag, String newTag) throws Exception {
 		if (mReader != null) {
-			//
+			if (StringUtility.isEmpty(targetTag) || StringUtility.isEmpty(newTag)) {
+				throw new Exception("Tag data format error");
+			}
+
+			String strPrt = "0";
+			String strPWD = "00000000";
+			String Bank = "UII";
+			String filterBank = "UII";
+			int filterPtr = 32;
+			int filterCnt = 0;
+			String filterData = targetTag;
+			int strPtr = 2;
+			int cntStr = 6;
+			String strData = newTag;
+
+			boolean result = mReader.writeData(
+					strPWD,
+					BankEnum.valueOf(filterBank),
+					filterPtr,
+					filterCnt,
+					filterData,
+					BankEnum.valueOf(Bank),
+					strPtr,
+					cntStr,
+					strData
+			);
+			return result;
 		}
-		return true;
+		return false;
 	}
 
 	private boolean addTagToList(String strEPC) {
