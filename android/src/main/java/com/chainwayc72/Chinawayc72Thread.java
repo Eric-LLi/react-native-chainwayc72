@@ -7,6 +7,7 @@ import android.view.KeyEvent;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
@@ -49,6 +50,7 @@ public abstract class Chinawayc72Thread extends Thread {
 	private static Chinawayc72Thread instance = null;
 	private static String currentRoute = null;
 	private static Boolean isReading = false;
+	private static Boolean isConnected = false;
 
 	//RFID Instance
 	private static ArrayList<String> scannedTags = new ArrayList<>();
@@ -109,11 +111,16 @@ public abstract class Chinawayc72Thread extends Thread {
 	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyDownEvent", String.valueOf(keyCode));
-			if (isReadBarcode) {
+			if (isReadBarcode && !isReading) {
+				isReading = true;
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
 			} else {
 				try {
-					read(false);
+					if (currentRoute.equals("tagit")) {
+						read(true);
+					} else {
+						read(false);
+					}
 					isReading = true;
 				} catch (Exception err) {
 					Log.e("onKeyDownEvent", err.getMessage());
@@ -127,6 +134,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyUpEvent", String.valueOf(keyCode));
 			if (isReadBarcode) {
+				isReading = false;
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, false);
 			} else {
 				try {
@@ -157,6 +165,7 @@ public abstract class Chinawayc72Thread extends Thread {
 
 			currentRoute = null;
 			isReading = false;
+			isConnected = false;
 
 			//RFID Instance
 			scannedTags = new ArrayList<>();
@@ -180,10 +189,34 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
+	public boolean isConnected() {
+//		if (mReader != null) {
+//			int power = mReader.getPower();
+//			if (power > -1) {
+//				return true;
+//			}
+//		}
+		return isConnected;
+	}
+
+	public WritableArray getModuleName() {
+		WritableArray list = Arguments.createArray();
+		WritableMap map = Arguments.createMap();
+		map.putString("name", "ChainWay-C72");
+		list.pushMap(map);
+		return list;
+	}
+
 	public boolean enableReader(boolean isEnable) {
 		if (mReader != null) {
 			if (isEnable) {
 				boolean result = mReader.init();
+				if (!isConnected) {
+					isConnected = true;
+					WritableMap map = Arguments.createMap();
+					map.putBoolean("ConnectionState", true);
+					dispatchEvent(Dispatch_Event.RFIDStatusEvent, map);
+				}
 				return result;
 			} else {
 				return mReader.free();
@@ -201,6 +234,8 @@ public abstract class Chinawayc72Thread extends Thread {
 					String strEPC = mReader.convertUiiToEPC(strUII);
 					Log.w(Dispatch_Event.TagEvent, strEPC);
 					dispatchEvent(Dispatch_Event.TagEvent, strEPC);
+				} else {
+					throw new Exception("unable to read tag");
 				}
 			} else {
 				if (mReader.startInventoryTag(0, 0)) {
@@ -267,18 +302,12 @@ public abstract class Chinawayc72Thread extends Thread {
 		throw new Exception("Set antenna level failure");
 	}
 
-	public void saveCurrentRoute(String route) {
-		if (route != null) {
-			currentRoute = route.toLowerCase();
-		} else {
-			currentRoute = null;
-		}
-	}
-
-	public void cleanTags() {
+	public boolean cleanTags() {
 		if (mReader != null) {
 			scannedTags = new ArrayList<>();
+			return true;
 		}
+		return false;
 	}
 
 	public boolean writeTag(String targetTag, String newTag) throws Exception {
@@ -309,9 +338,30 @@ public abstract class Chinawayc72Thread extends Thread {
 					cntStr,
 					strData
 			);
+
+			if (result) {
+				dispatchEvent(Dispatch_Event.writeTag, "success");
+			} else {
+				dispatchEvent(Dispatch_Event.writeTag, "Program tag fail...");
+			}
 			return result;
 		}
 		return false;
+	}
+
+	public void SaveCurrentRoute(String routeName) {
+		if (routeName != null) {
+			currentRoute = routeName.toLowerCase();
+		} else {
+			currentRoute = null;
+		}
+	}
+
+	public boolean IsReadBarcode(boolean value) {
+		isReadBarcode = value;
+
+		//If read barcode, then turn off RFID mode.
+		return enableReader(!value);
 	}
 
 	private boolean addTagToList(String strEPC) {
@@ -333,4 +383,5 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 		return false;
 	}
+
 }

@@ -112,6 +112,20 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
+	public void isConnected(Promise promise) {
+		if (this.scannerthread != null) {
+			promise.resolve(this.scannerthread.isConnected());
+		}
+	}
+
+	@ReactMethod
+	public void getModuleName(Promise promise) {
+		if (this.scannerthread != null) {
+			promise.resolve(this.scannerthread.getModuleName());
+		}
+	}
+
+	@ReactMethod
 	public void enableReader(boolean isEnable, Promise promise) {
 		try {
 			if (this.scannerthread != null) {
@@ -172,18 +186,6 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void saveCurrentRoute(String route, Promise promise) {
-		try {
-			if (this.scannerthread != null) {
-				this.scannerthread.saveCurrentRoute(route);
-			}
-			promise.resolve(true);
-		} catch (Exception err) {
-			promise.reject(err);
-		}
-	}
-
-	@ReactMethod
 	public void writeTag(String targetTag, String newTag, Promise promise) {
 		try {
 			if (this.scannerthread != null) {
@@ -195,9 +197,25 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void cleanTags() {
+	public void cleanTags(Promise promise) {
 		if (this.scannerthread != null) {
-			this.scannerthread.cleanTags();
+			promise.resolve(this.scannerthread.cleanTags());
+		}
+	}
+
+	@ReactMethod
+	public void SaveCurrentRoute(String routeName, Promise promise) {
+		if (this.scannerthread != null) {
+			this.scannerthread.SaveCurrentRoute(routeName);
+			promise.resolve(true);
+		}
+	}
+
+	@ReactMethod
+	public void IsReadBarcode(boolean value, Promise promise) {
+		if (this.scannerthread != null) {
+			boolean result = this.scannerthread.IsReadBarcode(value);
+			promise.resolve(result);
 		}
 	}
 }

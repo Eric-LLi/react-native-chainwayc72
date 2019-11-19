@@ -17,6 +17,9 @@ export class RFIDScanner {
 	ActiveAllListener = () => {
 		if(this.eventEmitter){
 			this.eventEmitter.addListener(RFIDScannerEvent.TAG, this.handleTagEvent);
+			this.eventEmitter.addListener(RFIDScannerEvent.RFID_Status, this.handleStatusEvent);
+			this.eventEmitter.addListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
+			this.eventEmitter.addListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
 		}
 		
 	};
@@ -24,9 +27,18 @@ export class RFIDScanner {
 	RemoveAllListener = () => {
 		if(this.eventEmitter){
 			this.eventEmitter.removeListener(RFIDScannerEvent.TAG, this.handleTagEvent);
+			this.eventEmitter.removeListener(RFIDScannerEvent.RFID_Status, this.handleStatusEvent);
+			this.eventEmitter.removeListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
+			this.eventEmitter.removeListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
 		}
 	};
 	
+	handleStatusEvent = (event) => {
+		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.RFID_Status)) {
+			this.onCallbacks[RFIDScannerEvent.RFID_Status](event);
+		}
+	}
+
 	/**
 	 * tags come from native module
 	 * @param  {String} tag
@@ -37,7 +49,17 @@ export class RFIDScanner {
 		}
 	}
 
-	
+	handleBarcodeTriggerEvent = (event) => {
+		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.BarcodeTrigger)) {
+			this.onCallbacks[RFIDScannerEvent.BarcodeTrigger](event);
+		}
+	}
+
+	handleWriteTagEvent = (event) => {
+		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.WRITETAG)) {
+			this.onCallbacks[RFIDScannerEvent.WRITETAG](event);
+		}
+	}
 	/**
 	 * @param  {String} event name of the event, using RFIDScannerEvent
 	 * @param  {Function} callback callback function to UI thread
@@ -58,12 +80,11 @@ export class RFIDScanner {
 		}
 	}
 
-	InitThread = () => {
+	InitialThread = () => {
 		rfidScannerManager.InitialThread();
 	};
 
 	init = () => {
-		this.ActiveAllListener();
 		return rfidScannerManager.init();
 	};
 
@@ -71,9 +92,18 @@ export class RFIDScanner {
 		return rfidScannerManager.shutdown();
 	}
 
+	getModuleName = () => {
+		return rfidScannerManager.getModuleName();
+	}
+
 	isConnected = () => {
 		return rfidScannerManager.isConnected();
 	};
+
+	AttemptToReconnect = () => {
+		// return rfidScannerManager.AttemptToReconnect();
+		return Promise.resolve(false);
+	}
 
 	enableReader = (isEnable: Boolean) => {
 		return rfidScannerManager.enableReader(isEnable);
@@ -87,19 +117,38 @@ export class RFIDScanner {
 		return rfidScannerManager.cancel();
 	}
 
+	cleanTags = () => {
+		return rfidScannerManager.cleanTags();
+	}
+	
 	getAntennaLevel = () => {
 		return rfidScannerManager.getAntennaLevel();
 	}
 
-	setAntennaLevel = (antennaLevel: Number) => {
-		return rfidScannerManager.setAntennaLevel(antennaLevel);
+	setAntennaLevel = (Antenna: Object) => {
+		let num = null;
+		if(Antenna.hasOwnProperty('antennaLevel')){
+			num = parseInt(Antenna.antennaLevel);
+			return rfidScannerManager.setAntennaLevel(num);	
+		} else {
+			return Promise.reject('Antenna level format error');
+		}
 	}
 
 	saveCurrentRoute = (route: String) => {
 		rfidScannerManager.saveCurrentRoute(route);
 	}
+
 	writeTag = (targetTag: String, newTag: String) => {
 		return rfidScannerManager.writeTag(targetTag,newTag);
+	}
+
+	SaveCurrentRoute = (routeName: String) => {
+		return rfidScannerManager.SaveCurrentRoute(routeName);
+	}
+
+	IsReadBarcode = (value: Boolean) => {
+		return rfidScannerManager.IsReadBarcode(value);
 	}
 }
 
