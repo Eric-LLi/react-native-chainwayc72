@@ -20,6 +20,7 @@ export class RFIDScanner {
 			this.eventEmitter.addListener(RFIDScannerEvent.RFID_Status, this.handleStatusEvent);
 			this.eventEmitter.addListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
 			this.eventEmitter.addListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
+			this.eventEmitter.addListener(RFIDScannerEvent.triggerAction, this.handleTriggerActionEvent);
 		}
 		
 	};
@@ -30,6 +31,7 @@ export class RFIDScanner {
 			this.eventEmitter.removeListener(RFIDScannerEvent.RFID_Status, this.handleStatusEvent);
 			this.eventEmitter.removeListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
 			this.eventEmitter.removeListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
+			this.eventEmitter.removeListener(RFIDScannerEvent.triggerAction, this.handleTriggerActionEvent);
 		}
 	};
 	
@@ -60,6 +62,13 @@ export class RFIDScanner {
 			this.onCallbacks[RFIDScannerEvent.WRITETAG](event);
 		}
 	}
+
+	handleTriggerActionEvent = (event) => {
+		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.triggerAction)) {
+			this.onCallbacks[RFIDScannerEvent.triggerAction](event);
+		}
+	}
+
 	/**
 	 * @param  {String} event name of the event, using RFIDScannerEvent
 	 * @param  {Function} callback callback function to UI thread
@@ -149,6 +158,14 @@ export class RFIDScanner {
 
 	IsReadBarcode = (value: Boolean) => {
 		return rfidScannerManager.IsReadBarcode(value);
+	}
+
+	GetConnectedReader = () => {
+		return rfidScannerManager.GetConnectedReader();
+	}
+
+	SaveSelectedScanner = (value: String) => {
+		return rfidScannerManager.SaveSelectedScanner(value);
 	}
 }
 

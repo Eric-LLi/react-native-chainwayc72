@@ -7,8 +7,6 @@ import android.view.KeyEvent;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.Arguments;
-import com.facebook.react.bridge.ReadableArray;
-import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.rscja.deviceapi.RFIDWithUHF;
@@ -17,18 +15,29 @@ import com.rscja.deviceapi.RFIDWithUHF.BankEnum;
 
 import java.util.ArrayList;
 
-// Add to MainActivity.java file under createReactActivityDelegate
+// Add to MainActivity.java above createReactActivityDelegate
 /*
 @Override  // <--- Add this method if you want to react to keyDown
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Chinawayc72Thread.getInstance().onKeyDownEvent(keyCode, event);
-		super.onKeyUp(keyCode, event);
+		if (keyCode == 280 && event.getRepeatCount() == 0) {
+			Chainwayc72Module instance = Chainwayc72Module.getInstance();
+			boolean pull = instance.getIsPulledTrigger();
+			if (!pull) {
+				instance.onKeyDownEvent(keyCode, event);
+			}
+		}
+		super.onKeyDown(keyCode, event);
 		return true;
 	}
 
 	@Override  // <--- Add this method if you want to react to keyUp
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		Chinawayc72Thread.getInstance().onKeyUpEvent(keyCode, event);
+		if (keyCode == 280) {
+			int count = event.getRepeatCount();
+			Chainwayc72Module instance = Chainwayc72Module.getInstance();
+			boolean pull = instance.getIsPulledTrigger();
+			instance.onKeyUpEvent(keyCode, event);
+		}
 		super.onKeyUp(keyCode, event);
 		return true;
 	}
@@ -41,17 +50,18 @@ class Dispatch_Event {
 	public static final String BarcodeTrigger = "BarcodeTrigger";
 	public static final String inventoryStart = "inventoryStart";
 	public static final String inventoryStop = "inventoryStop";
+	public static final String triggerAction = "triggerAction";
 }
 
 public abstract class Chinawayc72Thread extends Thread {
 
 	private ReactApplicationContext context;
 
-	private static Chinawayc72Thread instance = null;
 	private static String currentRoute = null;
 	private static Boolean isReading = false;
 	private static Boolean isConnected = false;
 
+	private static String moduleName = "ChainWay-C72";
 	//RFID Instance
 	private static ArrayList<String> scannedTags = new ArrayList<>();
 	private static RFIDWithUHF mReader = null;
@@ -74,11 +84,6 @@ public abstract class Chinawayc72Thread extends Thread {
 
 	public Chinawayc72Thread(ReactApplicationContext context) {
 		this.context = context;
-		instance = this;
-	}
-
-	static public Chinawayc72Thread getInstance() {
-		return instance;
 	}
 
 	public void onHostResume() {
@@ -111,17 +116,21 @@ public abstract class Chinawayc72Thread extends Thread {
 	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyDownEvent", String.valueOf(keyCode));
-			if (isReadBarcode && !isReading) {
-				isReading = true;
+			if (isReadBarcode) {
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
 			} else {
 				try {
-					if (currentRoute.equals("tagit")) {
+					if (currentRoute != null && currentRoute.equals("tagit")) {
 						read(true);
 					} else {
+						if (currentRoute != null && currentRoute.equals("lookup")) {
+							WritableMap map = Arguments.createMap();
+							map.putString("RFIDStatusEvent", "inventoryStart");
+							dispatchEvent(Dispatch_Event.triggerAction, map);
+						}
 						read(false);
 					}
-					isReading = true;
+
 				} catch (Exception err) {
 					Log.e("onKeyDownEvent", err.getMessage());
 				}
@@ -134,12 +143,14 @@ public abstract class Chinawayc72Thread extends Thread {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyUpEvent", String.valueOf(keyCode));
 			if (isReadBarcode) {
-				isReading = false;
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, false);
 			} else {
+				if (currentRoute != null && (currentRoute.equals("lookup") || currentRoute.equals(
+						"audit"))) {
+					scannedTags = new ArrayList<>();
+				}
 				try {
 					cancel();
-					isReading = false;
 				} catch (Exception err) {
 					Log.e("onKeyUpEvent", err.getMessage());
 				}
@@ -167,6 +178,8 @@ public abstract class Chinawayc72Thread extends Thread {
 			isReading = false;
 			isConnected = false;
 
+			moduleName = "ChainWay-C72";
+
 			//RFID Instance
 			scannedTags = new ArrayList<>();
 			mReader = null;
@@ -186,23 +199,26 @@ public abstract class Chinawayc72Thread extends Thread {
 
 			// Audit
 			isAuditMode = false;
+
 		}
 	}
 
 	public boolean isConnected() {
-//		if (mReader != null) {
-//			int power = mReader.getPower();
-//			if (power > -1) {
-//				return true;
-//			}
-//		}
+		boolean result = false;
+		if (mReader != null) {
+			int power = mReader.getPower();
+			if (power > -1) {
+				result = true;
+			}
+		}
+		isConnected = result;
 		return isConnected;
 	}
 
 	public WritableArray getModuleName() {
 		WritableArray list = Arguments.createArray();
 		WritableMap map = Arguments.createMap();
-		map.putString("name", "ChainWay-C72");
+		map.putString("name", moduleName);
 		list.pushMap(map);
 		return list;
 	}
@@ -227,6 +243,7 @@ public abstract class Chinawayc72Thread extends Thread {
 
 	public void read(boolean isSingleRead) throws Exception {
 		if (mReader != null && !isReading) {
+			isReading = true;
 			Log.e("Start Reading....", "");
 			if (isSingleRead) {
 				String strUII = mReader.inventorySingleTag();
@@ -245,20 +262,25 @@ public abstract class Chinawayc72Thread extends Thread {
 							String strTid;
 							String strResult;
 							String[] res = null;
-							String EPC;
+							String UII;
 
 							while (isReading) {
 								res = mReader.readTagFromBuffer();
 								if (res != null) {
 									strTid = res[0];
-									EPC = res[1];
-									if (strTid.length() != 0 && !strTid.equals("0000000" +
-											"000000000") && !strTid.equals("000000000000000000000000")) {
+									UII = res[1];
+									if (strTid != null && strTid.length() != 0 && !strTid.equals(
+											"0000000" +
+													"000000000") && !strTid.equals("000000000000000000000000")) {
 										strResult = "TID:" + strTid + "\n";
 									} else {
 										strResult = "";
 									}
+
+									String EPC = mReader.convertUiiToEPC(UII);
+
 									Log.e("DATA", "EPC:" + EPC + "|" + strResult);
+
 									boolean result = addTagToList(EPC);
 									if (result) {
 										dispatchEvent(Dispatch_Event.TagEvent, EPC);
@@ -364,6 +386,19 @@ public abstract class Chinawayc72Thread extends Thread {
 		return enableReader(!value);
 	}
 
+	public String GetConnectedReader() {
+		if (mReader != null && isConnected) {
+			return moduleName;
+		}
+		return null;
+	}
+
+	public void SaveSelectedScanner(String value) {
+		if (mReader != null) {
+			selectedScanner = value;
+		}
+	}
+
 	private boolean addTagToList(String strEPC) {
 		if (mReader != null && strEPC != null) {
 			if (!checkIsExisted(strEPC)) {
@@ -377,7 +412,7 @@ public abstract class Chinawayc72Thread extends Thread {
 	private boolean checkIsExisted(String strEPC) {
 		for (int i = 0; i < scannedTags.size(); i++) {
 			String tag = scannedTags.get(i);
-			if (strEPC.equals(tag)) {
+			if (strEPC != null && strEPC.equals(tag)) {
 				return true;
 			}
 		}

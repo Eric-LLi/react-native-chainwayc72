@@ -1,6 +1,7 @@
 package com.chainwayc72;
 
 import android.util.Log;
+import android.view.KeyEvent;
 
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -13,18 +14,43 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 public class Chainwayc72Module extends ReactContextBaseJavaModule implements LifecycleEventListener {
 
-	private final ReactApplicationContext reactContext;
+	private final ReactApplicationContext context;
 	private Chinawayc72Thread scannerthread = null;
+	private static boolean isPulledTrigger = false;
+	private static Chainwayc72Module instance = null;
 
 	public Chainwayc72Module(ReactApplicationContext reactContext) {
 		super(reactContext);
-		this.reactContext = reactContext;
-		this.reactContext.addLifecycleEventListener(this);
+		this.context = reactContext;
+		this.context.addLifecycleEventListener(this);
 
-		if (this.scannerthread == null) {
+		instance = this;
+		if (scannerthread == null) {
 			InitialThread();
 		}
 		Log.v("RFID", "RFIDScannerManager created");
+	}
+
+	public static Chainwayc72Module getInstance() {
+		return instance;
+	}
+
+	public boolean getIsPulledTrigger() {
+		return isPulledTrigger;
+	}
+
+	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
+		if (scannerthread != null && !isPulledTrigger) {
+			isPulledTrigger = true;
+			scannerthread.onKeyDownEvent(keyCode, keyEvent);
+		}
+	}
+
+	public void onKeyUpEvent(int keyCode, KeyEvent keyEvent) {
+		if (scannerthread != null) {
+			isPulledTrigger = false;
+			scannerthread.onKeyUpEvent(keyCode, keyEvent);
+		}
 	}
 
 	@Override
@@ -59,26 +85,26 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 			if (this.scannerthread != null) {
 				this.scannerthread.interrupt();
 			}
-			this.scannerthread = new Chinawayc72Thread(this.reactContext) {
+			this.scannerthread = new Chinawayc72Thread(context) {
 
 				@Override
 				public void dispatchEvent(String name, WritableMap data) {
-					Chainwayc72Module.this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
+					Chainwayc72Module.this.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
 				}
 
 				@Override
 				public void dispatchEvent(String name, String data) {
-					Chainwayc72Module.this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
+					Chainwayc72Module.this.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
 				}
 
 				@Override
 				public void dispatchEvent(String name, WritableArray data) {
-					Chainwayc72Module.this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
+					Chainwayc72Module.this.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
 				}
 
 				@Override
 				public void dispatchEvent(String name, boolean data) {
-					Chainwayc72Module.this.reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
+					Chainwayc72Module.this.context.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(name, data);
 				}
 			};
 			this.scannerthread.start();
@@ -216,6 +242,22 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 		if (this.scannerthread != null) {
 			boolean result = this.scannerthread.IsReadBarcode(value);
 			promise.resolve(result);
+		}
+	}
+
+	@ReactMethod
+	public void GetConnectedReader(Promise promise) {
+		if (this.scannerthread != null) {
+			String result = this.scannerthread.GetConnectedReader();
+			promise.resolve(result);
+		}
+	}
+
+	@ReactMethod
+	public void SaveSelectedScanner(String value, Promise promise) {
+		if (this.scannerthread != null) {
+			this.scannerthread.SaveSelectedScanner(value);
+			promise.resolve(true);
 		}
 	}
 }
