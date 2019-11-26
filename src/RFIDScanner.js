@@ -167,6 +167,12 @@ export class RFIDScanner {
 	SaveSelectedScanner = (value: String) => {
 		return rfidScannerManager.SaveSelectedScanner(value);
 	}
+	SaveTagID =(value: String) => {
+		return Promise.resolve(true);
+	}
+	LocateMode =(value: String) => {
+		return Promise.resolve(true);
+	}
 }
 
 export default new RFIDScanner();
