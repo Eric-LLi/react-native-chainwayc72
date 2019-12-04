@@ -21,6 +21,7 @@ export class RFIDScanner {
 			this.eventEmitter.addListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
 			this.eventEmitter.addListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
 			this.eventEmitter.addListener(RFIDScannerEvent.triggerAction, this.handleTriggerActionEvent);
+			this.eventEmitter.addListener(RFIDScannerEvent.HANDLE_ERROR, this.handleErrorEvent);
 		}
 		
 	};
@@ -32,9 +33,15 @@ export class RFIDScanner {
 			this.eventEmitter.removeListener(RFIDScannerEvent.BarcodeTrigger, this.handleBarcodeTriggerEvent);
 			this.eventEmitter.removeListener(RFIDScannerEvent.WRITETAG, this.handleWriteTagEvent);
 			this.eventEmitter.removeListener(RFIDScannerEvent.triggerAction, this.handleTriggerActionEvent);
+			this.eventEmitter.removeListener(RFIDScannerEvent.HANDLE_ERROR, this.handleErrorEvent);
 		}
 	};
-	
+	handleErrorEvent = (event) => {
+		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.HANDLE_ERROR)) {
+			this.onCallbacks[RFIDScannerEvent.HANDLE_ERROR](event);
+		}
+	}
+
 	handleStatusEvent = (event) => {
 		if (this.onCallbacks.hasOwnProperty(RFIDScannerEvent.RFID_Status)) {
 			this.onCallbacks[RFIDScannerEvent.RFID_Status](event);
@@ -110,7 +117,6 @@ export class RFIDScanner {
 	};
 
 	AttemptToReconnect = () => {
-		// return rfidScannerManager.AttemptToReconnect();
 		return Promise.resolve(false);
 	}
 
@@ -118,21 +124,21 @@ export class RFIDScanner {
 		return rfidScannerManager.enableReader(isEnable);
 	}
 
-	read = (isSingleRead: Boolean) => {
-		rfidScannerManager.read(isSingleRead);
-	}
+	// read = (isSingleRead: Boolean) => {
+	// 	rfidScannerManager.read(isSingleRead);
+	// }
 
-	cancel = () => {
-		return rfidScannerManager.cancel();
-	}
+	// cancel = () => {
+	// 	return rfidScannerManager.cancel();
+	// }
 
 	cleanTags = () => {
 		return rfidScannerManager.cleanTags();
 	}
 	
-	getAntennaLevel = () => {
-		return rfidScannerManager.getAntennaLevel();
-	}
+	// getAntennaLevel = () => {
+	// 	return rfidScannerManager.getAntennaLevel();
+	// }
 
 	setAntennaLevel = (Antenna: Object) => {
 		let num = null;
@@ -144,9 +150,9 @@ export class RFIDScanner {
 		}
 	}
 
-	saveCurrentRoute = (route: String) => {
-		rfidScannerManager.saveCurrentRoute(route);
-	}
+	// saveCurrentRoute = (route: String) => {
+	// 	rfidScannerManager.saveCurrentRoute(route);
+	// }
 
 	writeTag = (targetTag: String, newTag: String) => {
 		return rfidScannerManager.writeTag(targetTag,newTag);
@@ -168,9 +174,6 @@ export class RFIDScanner {
 		return rfidScannerManager.SaveSelectedScanner(value);
 	}
 	SaveTagID =(value: String) => {
-		return Promise.resolve(true);
-	}
-	LocateMode =(value: String) => {
 		return Promise.resolve(true);
 	}
 }

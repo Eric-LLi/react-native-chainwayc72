@@ -44,13 +44,14 @@ import java.util.ArrayList;
 */
 
 class Dispatch_Event {
-	public static final String TagEvent = "TagEvent";
-	public static final String RFIDStatusEvent = "RFIDStatusEvent";
-	public static final String writeTag = "writeTag";
-	public static final String BarcodeTrigger = "BarcodeTrigger";
-	public static final String inventoryStart = "inventoryStart";
-	public static final String inventoryStop = "inventoryStop";
-	public static final String triggerAction = "triggerAction";
+	static final String TagEvent = "TagEvent";
+	static final String RFIDStatusEvent = "RFIDStatusEvent";
+	static final String writeTag = "writeTag";
+	static final String BarcodeTrigger = "BarcodeTrigger";
+	static final String inventoryStart = "inventoryStart";
+	static final String inventoryStop = "inventoryStop";
+	static final String triggerAction = "triggerAction";
+	static final String HandleError = "HandleError";
 }
 
 public abstract class Chinawayc72Thread extends Thread {
@@ -61,7 +62,7 @@ public abstract class Chinawayc72Thread extends Thread {
 	private static Boolean isReading = false;
 	private static Boolean isConnected = false;
 
-	private static String moduleName = "ChainWay-C72";
+	private static final String moduleName = "ChainWay-C72";
 	//RFID Instance
 	private static ArrayList<String> scannedTags = new ArrayList<>();
 	private static RFIDWithUHF mReader = null;
@@ -70,17 +71,13 @@ public abstract class Chinawayc72Thread extends Thread {
 	private static String selectedScanner = null;
 
 	// Locate Tag
-	private static boolean isLocatingTag = false;
-	private static boolean isLocateMode = false;
-	private String tagID = "";
+//	private static boolean isLocatingTag = false;
+//	private static boolean isLocateMode = false;
+//	private static String tagID = "";
 
 	// Tag IT
-	private static boolean isTagITMode = false;
 	private static boolean isReadBarcode = false;
 	private static boolean isProgrammingTag = false;
-
-	// Audit
-	private static boolean isAuditMode = false;
 
 	public Chinawayc72Thread(ReactApplicationContext context) {
 		this.context = context;
@@ -99,7 +96,7 @@ public abstract class Chinawayc72Thread extends Thread {
 			try {
 				shutdown();
 			} catch (Exception err) {
-				Log.e("onHostDestroy", err.getMessage());
+				HandleError(err.getMessage(), "onHostDestroy");
 			}
 		}
 	}
@@ -120,19 +117,19 @@ public abstract class Chinawayc72Thread extends Thread {
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
 			} else {
 				try {
-					if (currentRoute != null && currentRoute.equals("tagit")) {
-						read(true);
-					} else {
-						if (currentRoute != null && currentRoute.equals("lookup")) {
+//					if (currentRoute != null && currentRoute.equalsIgnoreCase("tagit")) {
+//						read(true);
+//					} else
+					if (currentRoute != null) {
+						if (currentRoute.equalsIgnoreCase("lookup")) {
 							WritableMap map = Arguments.createMap();
 							map.putString("RFIDStatusEvent", "inventoryStart");
 							dispatchEvent(Dispatch_Event.triggerAction, map);
 						}
 						read(false);
 					}
-
 				} catch (Exception err) {
-					Log.e("onKeyDownEvent", err.getMessage());
+					HandleError(err.getMessage(), "onKeyDownEvent");
 				}
 			}
 		}
@@ -145,14 +142,15 @@ public abstract class Chinawayc72Thread extends Thread {
 			if (isReadBarcode) {
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, false);
 			} else {
-				if (currentRoute != null && (currentRoute.equals("lookup") || currentRoute.equals(
-						"audit"))) {
+				if (currentRoute != null &&
+						(currentRoute.equalsIgnoreCase("lookup") ||
+								currentRoute.equalsIgnoreCase("tagit"))) {
 					scannedTags = new ArrayList<>();
 				}
 				try {
 					cancel();
 				} catch (Exception err) {
-					Log.e("onKeyUpEvent", err.getMessage());
+					HandleError(err.getMessage(), "onKeyUpEvent");
 				}
 			}
 		}
@@ -178,8 +176,6 @@ public abstract class Chinawayc72Thread extends Thread {
 			isReading = false;
 			isConnected = false;
 
-			moduleName = "ChainWay-C72";
-
 			//RFID Instance
 			scannedTags = new ArrayList<>();
 			mReader = null;
@@ -188,17 +184,13 @@ public abstract class Chinawayc72Thread extends Thread {
 			selectedScanner = null;
 
 			// Locate Tag
-			isLocatingTag = false;
-			isLocateMode = false;
-			tagID = null;
+//			isLocatingTag = false;
+//			isLocateMode = false;
+//			tagID = null;
 
 			// Tag IT
-			isTagITMode = false;
 			isReadBarcode = false;
 			isProgrammingTag = false;
-
-			// Audit
-			isAuditMode = false;
 
 		}
 	}
@@ -241,7 +233,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return false;
 	}
 
-	public void read(boolean isSingleRead) throws Exception {
+	private void read(boolean isSingleRead) throws Exception {
 		if (mReader != null && !isReading) {
 			isReading = true;
 			Log.e("Start Reading....", "");
@@ -261,17 +253,17 @@ public abstract class Chinawayc72Thread extends Thread {
 						public void run() {
 							String strTid;
 							String strResult;
-							String[] res = null;
+							String[] res;
 							String UII;
+							double rssi;
 
 							while (isReading) {
 								res = mReader.readTagFromBuffer();
 								if (res != null) {
 									strTid = res[0];
 									UII = res[1];
-									if (strTid != null && strTid.length() != 0 && !strTid.equals(
-											"0000000" +
-													"000000000") && !strTid.equals("000000000000000000000000")) {
+									rssi = Double.parseDouble(res[2]);
+									if (strTid.length() != 0 && !strTid.equals("0000000000000000") && !strTid.equals("000000000000000000000000")) {
 										strResult = "TID:" + strTid + "\n";
 									} else {
 										strResult = "";
@@ -281,10 +273,22 @@ public abstract class Chinawayc72Thread extends Thread {
 
 									Log.e("DATA", "EPC:" + EPC + "|" + strResult);
 
-									boolean result = addTagToList(EPC);
-									if (result) {
-										dispatchEvent(Dispatch_Event.TagEvent, EPC);
+									if (currentRoute != null && currentRoute.equalsIgnoreCase(
+											"tagit")) {
+										if (rssi > -48) {
+											boolean result = addTagToList(EPC);
+											if (result && scannedTags.size() == 1) {
+												cancel();
+												dispatchEvent(Dispatch_Event.TagEvent, EPC);
+											}
+										}
+									} else {
+										boolean result = addTagToList(EPC);
+										if (result) {
+											dispatchEvent(Dispatch_Event.TagEvent, EPC);
+										}
 									}
+
 								}
 							}
 						}
@@ -297,12 +301,11 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	public boolean cancel() throws Exception {
+	private void cancel() {
 		if (mReader != null && isReading) {
+			mReader.stopInventory();
 			isReading = false;
-			return mReader.stopInventory();
 		}
-		return true;
 	}
 
 	public int getAntennaLevel() throws Exception {
@@ -319,6 +322,8 @@ public abstract class Chinawayc72Thread extends Thread {
 			boolean result = mReader.setPower(power);
 			if (result) {
 				return true;
+			} else {
+				throw new Exception("Set antenna level failure");
 			}
 		}
 		throw new Exception("Set antenna level failure");
@@ -333,21 +338,22 @@ public abstract class Chinawayc72Thread extends Thread {
 	}
 
 	public boolean writeTag(String targetTag, String newTag) throws Exception {
-		if (mReader != null) {
+		if (mReader != null && !isProgrammingTag) {
 			if (StringUtility.isEmpty(targetTag) || StringUtility.isEmpty(newTag)) {
 				throw new Exception("Tag data format error");
 			}
 
-			String strPrt = "0";
+			isProgrammingTag = true;
 			String strPWD = "00000000";
 			String Bank = "UII";
 			String filterBank = "UII";
+			String strData = newTag;
+			int cntStr = 6;
+
 			int filterPtr = 32;
-			int filterCnt = 0;
+			int filterCnt = 96;
 			String filterData = targetTag;
 			int strPtr = 2;
-			int cntStr = 6;
-			String strData = newTag;
 
 			boolean result = mReader.writeData(
 					strPWD,
@@ -366,6 +372,7 @@ public abstract class Chinawayc72Thread extends Thread {
 			} else {
 				dispatchEvent(Dispatch_Event.writeTag, "Program tag fail...");
 			}
+			isProgrammingTag = false;
 			return result;
 		}
 		return false;
@@ -383,7 +390,8 @@ public abstract class Chinawayc72Thread extends Thread {
 		isReadBarcode = value;
 
 		//If read barcode, then turn off RFID mode.
-		return enableReader(!value);
+//		return enableReader(!value);
+		return true;
 	}
 
 	public String GetConnectedReader() {
@@ -399,7 +407,15 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	private boolean addTagToList(String strEPC) {
+	private void HandleError(String msg, String code) {
+		Log.e(code, msg);
+		WritableMap map = Arguments.createMap();
+		map.putString("msg", msg);
+		map.putString("code", code);
+		dispatchEvent(Dispatch_Event.HandleError, map);
+	}
+
+	private static boolean addTagToList(String strEPC) {
 		if (mReader != null && strEPC != null) {
 			if (!checkIsExisted(strEPC)) {
 				scannedTags.add(strEPC);
@@ -409,7 +425,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return false;
 	}
 
-	private boolean checkIsExisted(String strEPC) {
+	private static boolean checkIsExisted(String strEPC) {
 		for (int i = 0; i < scannedTags.size(); i++) {
 			String tag = scannedTags.get(i);
 			if (strEPC != null && strEPC.equals(tag)) {

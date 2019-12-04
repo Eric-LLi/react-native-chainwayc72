@@ -164,30 +164,6 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void read(boolean isSingleRead, Promise promise) {
-		try {
-			if (this.scannerthread != null) {
-				this.scannerthread.read(isSingleRead);
-				promise.resolve(true);
-			}
-		} catch (Exception err) {
-			promise.reject(err);
-		}
-	}
-
-	@ReactMethod
-	public void cancel(Promise promise) {
-		try {
-			if (this.scannerthread != null) {
-				boolean result = this.scannerthread.cancel();
-				promise.resolve(result);
-			}
-		} catch (Exception err) {
-			promise.reject(err);
-		}
-	}
-
-	@ReactMethod
 	public void getAntennaLevel(Promise promise) {
 		try {
 			if (this.scannerthread != null) {
