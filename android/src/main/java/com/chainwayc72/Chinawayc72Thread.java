@@ -113,13 +113,10 @@ public abstract class Chinawayc72Thread extends Thread {
 	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyDownEvent", String.valueOf(keyCode));
-			if (isReadBarcode) {
+			if (currentRoute != null && isReadBarcode) {
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
 			} else {
 				try {
-//					if (currentRoute != null && currentRoute.equalsIgnoreCase("tagit")) {
-//						read(true);
-//					} else
 					if (currentRoute != null) {
 						if (currentRoute.equalsIgnoreCase("lookup")) {
 							WritableMap map = Arguments.createMap();
