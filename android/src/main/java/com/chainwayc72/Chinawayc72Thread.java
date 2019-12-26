@@ -79,19 +79,19 @@ public abstract class Chinawayc72Thread extends Thread {
 	private static boolean isReadBarcode = false;
 	private static boolean isProgrammingTag = false;
 
-	public Chinawayc72Thread(ReactApplicationContext context) {
+	Chinawayc72Thread(ReactApplicationContext context) {
 		this.context = context;
 	}
 
-	public void onHostResume() {
+	void onHostResume() {
 		//
 	}
 
-	public void onHostPause() {
+	void onHostPause() {
 		//
 	}
 
-	public void onHostDestroy() {
+	void onHostDestroy() {
 		if (mReader != null) {
 			try {
 				shutdown();
@@ -110,13 +110,16 @@ public abstract class Chinawayc72Thread extends Thread {
 	public abstract void dispatchEvent(String name, boolean data);
 
 	//Trigger pull
-	public void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
+	void onKeyDownEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyDownEvent", String.valueOf(keyCode));
-			if (currentRoute != null && isReadBarcode) {
+			if (isReadBarcode) {
 				dispatchEvent(Dispatch_Event.BarcodeTrigger, true);
 			} else {
 				try {
+//					if (currentRoute != null && currentRoute.equalsIgnoreCase("tagit")) {
+//						read(true);
+//					} else
 					if (currentRoute != null) {
 						if (currentRoute.equalsIgnoreCase("lookup")) {
 							WritableMap map = Arguments.createMap();
@@ -133,7 +136,7 @@ public abstract class Chinawayc72Thread extends Thread {
 	}
 
 	//Trigger release
-	public void onKeyUpEvent(int keyCode, KeyEvent keyEvent) {
+	void onKeyUpEvent(int keyCode, KeyEvent keyEvent) {
 		if (mReader != null && keyCode == 280) {
 			Log.w("onKeyUpEvent", String.valueOf(keyCode));
 			if (isReadBarcode) {
@@ -153,7 +156,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	public boolean init() throws Exception {
+	boolean init() throws Exception {
 		if (mReader == null) {
 			mReader = RFIDWithUHF.getInstance();
 			return true;
@@ -161,7 +164,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return false;
 	}
 
-	public void shutdown() throws Exception {
+	void shutdown() throws Exception {
 		if (mReader != null) {
 			if (isReading) {
 				cancel();
@@ -192,7 +195,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	public boolean isConnected() {
+	boolean isConnected() {
 		boolean result = false;
 		if (mReader != null) {
 			int power = mReader.getPower();
@@ -204,7 +207,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return isConnected;
 	}
 
-	public WritableArray getModuleName() {
+	WritableArray getModuleName() {
 		WritableArray list = Arguments.createArray();
 		WritableMap map = Arguments.createMap();
 		map.putString("name", moduleName);
@@ -212,7 +215,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return list;
 	}
 
-	public boolean enableReader(boolean isEnable) {
+	boolean enableReader(boolean isEnable) {
 		if (mReader != null) {
 			if (isEnable) {
 				boolean result = mReader.init();
@@ -305,7 +308,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		}
 	}
 
-	public int getAntennaLevel() throws Exception {
+	int getAntennaLevel() throws Exception {
 		if (mReader != null) {
 			int power = mReader.getPower();
 			if (power > -1)
@@ -314,7 +317,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		throw new Exception("Get antenna level failure");
 	}
 
-	public boolean setAntennaLevel(int power) throws Exception {
+	boolean setAntennaLevel(int power) throws Exception {
 		if (mReader != null) {
 			boolean result = mReader.setPower(power);
 			if (result) {
@@ -326,7 +329,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		throw new Exception("Set antenna level failure");
 	}
 
-	public boolean cleanTags() {
+	boolean cleanTags() {
 		if (mReader != null) {
 			scannedTags = new ArrayList<>();
 			return true;
@@ -334,7 +337,7 @@ public abstract class Chinawayc72Thread extends Thread {
 		return false;
 	}
 
-	public boolean writeTag(String targetTag, String newTag) throws Exception {
+	boolean writeTag(String targetTag, String newTag) throws Exception {
 		if (mReader != null && !isProgrammingTag) {
 			if (StringUtility.isEmpty(targetTag) || StringUtility.isEmpty(newTag)) {
 				throw new Exception("Tag data format error");
@@ -375,15 +378,16 @@ public abstract class Chinawayc72Thread extends Thread {
 		return false;
 	}
 
-	public void SaveCurrentRoute(String routeName) {
+	void SaveCurrentRoute(String routeName) {
 		if (routeName != null) {
 			currentRoute = routeName.toLowerCase();
 		} else {
 			currentRoute = null;
+			isReadBarcode = false;
 		}
 	}
 
-	public boolean IsReadBarcode(boolean value) {
+	boolean ReadBarcode(boolean value) {
 		isReadBarcode = value;
 
 		//If read barcode, then turn off RFID mode.
@@ -391,14 +395,14 @@ public abstract class Chinawayc72Thread extends Thread {
 		return true;
 	}
 
-	public String GetConnectedReader() {
+	String GetConnectedReader() {
 		if (mReader != null && isConnected) {
 			return moduleName;
 		}
 		return null;
 	}
 
-	public void SaveSelectedScanner(String value) {
+	void SaveSelectedScanner(String value) {
 		if (mReader != null) {
 			selectedScanner = value;
 		}

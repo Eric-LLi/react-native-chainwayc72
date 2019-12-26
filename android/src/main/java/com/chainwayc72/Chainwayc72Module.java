@@ -214,9 +214,9 @@ public class Chainwayc72Module extends ReactContextBaseJavaModule implements Lif
 	}
 
 	@ReactMethod
-	public void IsReadBarcode(boolean value, Promise promise) {
+	public void ReadBarcode(boolean value, Promise promise) {
 		if (this.scannerthread != null) {
-			boolean result = this.scannerthread.IsReadBarcode(value);
+			boolean result = this.scannerthread.ReadBarcode(value);
 			promise.resolve(result);
 		}
 	}

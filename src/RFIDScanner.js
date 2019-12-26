@@ -23,9 +23,7 @@ export class RFIDScanner {
 			this.eventEmitter.addListener(RFIDScannerEvent.triggerAction, this.handleTriggerActionEvent);
 			this.eventEmitter.addListener(RFIDScannerEvent.HANDLE_ERROR, this.handleErrorEvent);
 		}
-		
 	};
-
 	RemoveAllListener = () => {
 		if(this.eventEmitter){
 			this.eventEmitter.removeListener(RFIDScannerEvent.TAG, this.handleTagEvent);
@@ -140,7 +138,7 @@ export class RFIDScanner {
 	// 	return rfidScannerManager.getAntennaLevel();
 	// }
 
-	setAntennaLevel = (Antenna: Object) => {
+	SetAntennaLevel = (Antenna: Object) => {
 		let num = null;
 		if(Antenna.hasOwnProperty('antennaLevel')){
 			num = parseInt(Antenna.antennaLevel);
@@ -162,8 +160,8 @@ export class RFIDScanner {
 		return rfidScannerManager.SaveCurrentRoute(routeName);
 	}
 
-	IsReadBarcode = (value: Boolean) => {
-		return rfidScannerManager.IsReadBarcode(value);
+	ReadBarcode = (value: Boolean) => {
+		return rfidScannerManager.ReadBarcode(value);
 	}
 
 	GetConnectedReader = () => {
